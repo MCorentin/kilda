@@ -1,0 +1,5 @@
+HG00099	./fastqs/HG00099_R1.fq ./fastqs/HG00099_R2.fq
+HG00126	./fastqs/HG00126_R1.fq ./fastqs/HG00126_R2.fq
+HG02597	./fastqs/HG02597_R1.fq ./fastqs/HG02597_R2.fq
+HG02601	./fastqs/HG02601_R1.fq ./fastqs/HG02601_R2.fq
+NA21141	./fastqs/NA21141_R1.fq ./fastqs/NA21141_R2.fq
