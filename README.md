@@ -78,6 +78,8 @@ HG00123 28.53   31      		0      			2
 
 The nextflow scripts were developed and tested on Linux (Debian release 11) using nextflow 22.04.5.
 
+*Note*: kilda will not work with NextFlow versions lower than v21.
+
 You will need to have the following dependencies installed:
 - **jellyfish** (tested with v2.2.10)
 - **samtools** (tested with v1.19)
