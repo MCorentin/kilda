@@ -5,7 +5,10 @@ nextflow.enable.dsl = 2
 
 process create_fasta_kmers {
     publishDir "${params.wdir}/", mode: 'copy'
-    
+    input:
+       path(kiv2_kmers)
+       path(norm_kmers)
+       path(rsids_list)
     output:
         path(norm_kiv2_fasta)
     
@@ -15,11 +18,11 @@ process create_fasta_kmers {
         """
         set -eo pipefail
         
-        awk '{ print ">KIV2_"NR"\\n"\$1 }' ${params.input.kiv2_kmers} > ${norm_kiv2_fasta};
-        awk '{ print ">NORM_"NR"\\n"\$1 }' ${params.input.norm_kmers} >> ${norm_kiv2_fasta};
+        awk '{ print ">KIV2_"NR"\\n"\$1 }' ${kiv2_kmers} > ${norm_kiv2_fasta};
+        awk '{ print ">NORM_"NR"\\n"\$1 }' ${norm_kmers} >> ${norm_kiv2_fasta};
         # Adding the ref (2nd column) and alt (3rd column) kmers for each rsid (1st column) in "rsids_list"
         # with "rsid_ref" and "rsid_alt" as headers:
-        awk '{ print ">"\$1"_ref\\n"\$2"\\n>"\$1"_alt\\n"\$3 }' ${params.input.rsids_list} >> ${norm_kiv2_fasta};
+        awk '{ print ">"\$1"_ref\\n"\$2"\\n>"\$1"_alt\\n"\$3 }' ${rsids_list} >> ${norm_kiv2_fasta};
         """
 }
 
@@ -96,7 +99,10 @@ process kilda {
     publishDir "${params.wdir}/", mode: 'copy'
     
     input:
-        path(counts_list)
+       path(kiv2_kmers)
+       path(norm_kmers)
+       path(kilda_py)
+       path(counts_list)
     output:
         path(kiv2_outdir)
     
@@ -111,25 +117,53 @@ process kilda {
         """
         set -eo pipefail
 
-        ${params.tools.python} ${params.tools.kilda} \
+        ${params.tools.python} ${kilda_py} \
         -c ${counts_list} -o ${kiv2_outdir} -v -p \
-        -k ${params.input.kiv2_kmers} -l ${params.input.norm_kmers} \
+        -k ${kiv2_kmers} -l ${norm_kmers} \
         ${rsid_param}
         """
 }
 
 
+process bam_to_fastq {
+afterScript "rm -rf TMP"
+input:
+  path(fasta)
+  path(fai)
+  tuple val(sample),path(bam)
+output:
+  tuple val(sample),path("${sample}.R1.fq.gz"),path("${sample}.R2.fq.gz"),emit:fastq
+script:
+"""
+set -eo pipefail
+mkdir -p TMP
+${params.tools.samtools} collate -f --threads ${Math.max(1,(task.cpus as int) -1)} -O -u --no-PG --reference "${fasta}" "${bam}" TMP/tmp.collate |\\
+${params.tools.samtools} fastq -n --threads 1 -1 TMP/${sample}.R1.fq.gz -2 TMP/${sample}.R2.fq.gz -s /dev/null -0 /dev/null
+mv -v TMP/${sample}.R1.fq.gz ./
+mv -v TMP/${sample}.R2.fq.gz ./
+"""
+}
+
 workflow {
-    norm_kiv2_fasta = create_fasta_kmers()
+    norm_kiv2_fasta = create_fasta_kmers(file(params.input.kiv2_kmers), file(params.input.norm_kmers), file(params.input.rsids_list) )
 
     // Read each sample as a tuple (sampleID, list of fastqs) from the samplesheet:
     //fastqs_ch = Channel.fromPath("${params.input.samplesheet}").splitCsv(sep: '\t').map{ [it[0], it[1].split(" ")] }
 
-    fastqs_ch = Channel.fromPath("${params.input.samplesheet}").splitCsv(sep: '\t').map{ [it[0], it[1].split(" ").collect(fastq -> file(fastq)) ] }
+    bam_or_fastq_ch = Channel.fromPath("${params.input.samplesheet}").splitCsv(sep: '\t').
+     branch{v->
+            bam: v[1].endsWith("am")
+            fastq: true
+            }
+
+    bam2fq_ch = bam_to_fastq(file(params.input.genome_fasta), file(params.input.genome_fai), bam_or_fastq_ch.bam).fastq.
+                     map{[it[0],[it[1],it[2]]]}
+ 
+    fastqs_ch = bam_or_fastq_ch.fastq.map{ [it[0], it[1].split(" ").collect(fastq -> file(fastq)) ] }.mix(bam2fq_ch)
   
     jelly_kmers_ch = count_kmers(fastqs_ch, norm_kiv2_fasta)
     counts_ch = dump_kmers(jelly_kmers_ch).collect()
     counts_list_ch = CreateSampleMap(counts_ch)
     
-    kilda(counts_list_ch)
+    kilda(file(params.input.kiv2_kmers), file(params.input.norm_kmers) , file(params.tools.kilda), counts_list_ch)
 }
