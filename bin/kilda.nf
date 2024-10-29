@@ -126,18 +126,25 @@ process kilda {
 
 
 process bam_to_fastq {
+tag "${sample}"
 afterScript "rm -rf TMP"
 input:
+  path(kiv2bed)
+  path(normbed)
   path(fasta)
   path(fai)
-  tuple val(sample),path(bam)
+  tuple val(sample),path(bam), path(bai)
 output:
   tuple val(sample),path("${sample}.R1.fq.gz"),path("${sample}.R2.fq.gz"),emit:fastq
 script:
 """
 set -eo pipefail
 mkdir -p TMP
-${params.tools.samtools} collate -f --threads ${Math.max(1,(task.cpus as int) -1)} -O -u --no-PG --reference "${fasta}" "${bam}" TMP/tmp.collate |\\
+
+cat "${kiv2bed}" "${normbed}" > TMP/select.bed
+
+${params.tools.samtools} view -F '3844' --uncompressed -O BAM  -M -L TMP/select.bed --threads 1 --reference "${fasta}" "${bam}"  |\\
+${params.tools.samtools} collate -f --threads ${Math.max(1,(task.cpus as int) -2)} -O -u --no-PG --reference "${fasta}" "-" TMP/tmp.collate |\\
 ${params.tools.samtools} fastq -n --threads 1 -1 TMP/${sample}.R1.fq.gz -2 TMP/${sample}.R2.fq.gz -s /dev/null -0 /dev/null
 mv -v TMP/${sample}.R1.fq.gz ./
 mv -v TMP/${sample}.R2.fq.gz ./
@@ -152,11 +159,16 @@ workflow {
 
     bam_or_fastq_ch = Channel.fromPath("${params.input.samplesheet}").splitCsv(sep: '\t').
      branch{v->
-            bam: v[1].endsWith("am")
+            bam: v[1].endsWith(".bam")
             fastq: true
             }
 
-    bam2fq_ch = bam_to_fastq(file(params.input.genome_fasta), file(params.input.genome_fai), bam_or_fastq_ch.bam).fastq.
+    bam2fq_ch = bam_to_fastq(
+		file(params.input.kiv2_bed),
+		file(params.input.norm_bed),
+		file(params.input.genome_fasta),
+		file(params.input.genome_fai),
+		bam_or_fastq_ch.bam).fastq.
                      map{[it[0],[it[1],it[2]]]}
  
     fastqs_ch = bam_or_fastq_ch.fastq.map{ [it[0], it[1].split(" ").collect(fastq -> file(fastq)) ] }.mix(bam2fq_ch)
