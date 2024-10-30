@@ -5,8 +5,8 @@ nextflow.enable.dsl = 2
 
 process extract_fasta_from_bed {
     input:
-	path(fasta)
-	path(fai)
+        path(fasta)
+        path(fai)
         path(region_bed)
         
     output:
@@ -60,8 +60,8 @@ process filter_on_occurence {
 
 process count_kmers_outside_region {
     input:
-	path(fasta)
-	path(fai)
+        path(fasta)
+        path(fai)
         path(region_bed)
         
     output:
@@ -154,40 +154,40 @@ process output_fasta {
 
 
 workflow prepare_kmers_kiv2 {
-	main:
-	    KIV2_bed = Channel.fromPath("${params.input.kiv2_bed}")
-	    
-	    KIV2_fasta = extract_fasta_from_bed(file(params.input.genome_fasta),file(params.input.genome_fai),KIV2_bed)
+    main:
+        KIV2_bed = Channel.fromPath("${params.input.kiv2_bed}")
+        
+        KIV2_fasta = extract_fasta_from_bed(file(params.input.genome_fasta),file(params.input.genome_fai),KIV2_bed)
         kiv2_kmers = count_kmers_region(KIV2_fasta)
-	    
-	    kiv2_kmers_filt = filter_on_occurence(kiv2_kmers, 6)
-	    
-	    kiv2_bed = Channel.fromPath("${params.input.kiv2_bed}")
-	    kiv2_outside_kmers = count_kmers_outside_region(file(params.input.genome_fasta), file(params.input.genome_fai), kiv2_bed)
-	    
-	    filter_kmers_occuring_outside_region(kiv2_kmers_filt, kiv2_outside_kmers)
-	
-	emit:
-	    filter_kmers_occuring_outside_region.out
+        
+        kiv2_kmers_filt = filter_on_occurence(kiv2_kmers, 6)
+        
+        kiv2_bed = Channel.fromPath("${params.input.kiv2_bed}")
+        kiv2_outside_kmers = count_kmers_outside_region(file(params.input.genome_fasta), file(params.input.genome_fai), kiv2_bed)
+        
+        filter_kmers_occuring_outside_region(kiv2_kmers_filt, kiv2_outside_kmers)
+
+    emit:
+        filter_kmers_occuring_outside_region.out
 }
 
 // Normalisation region (recommended: the exons of LDLR, APOB and PCSK9): 
 workflow prepare_kmers_norm {
     main:
-	    norm_bed = Channel.fromPath("${params.input.norm_bed}")
-	    
+        norm_bed = Channel.fromPath("${params.input.norm_bed}")
+        
             norm_fasta = extract_fasta_from_bed(file(params.input.genome_fasta),file(params.input.genome_fai),norm_bed)
             norm_kmers = count_kmers_region(norm_fasta)
-	    
-	    norm_kmers_filt = filter_on_occurence(norm_kmers, 1)
-	    
-	    norm_bed = Channel.fromPath("${params.input.norm_bed}")
-	    norm_outside_kmers = count_kmers_outside_region(file(params.input.genome_fasta),file(params.input.genome_fai),norm_bed)
-	    
-	    filter_kmers_occuring_outside_region(norm_kmers_filt, norm_outside_kmers)
-	    
+        
+        norm_kmers_filt = filter_on_occurence(norm_kmers, 1)
+        
+        norm_bed = Channel.fromPath("${params.input.norm_bed}")
+        norm_outside_kmers = count_kmers_outside_region(file(params.input.genome_fasta),file(params.input.genome_fai),norm_bed)
+        
+        filter_kmers_occuring_outside_region(norm_kmers_filt, norm_outside_kmers)
+        
     emit:
-	    filter_kmers_occuring_outside_region.out
+        filter_kmers_occuring_outside_region.out
 }
 
 
