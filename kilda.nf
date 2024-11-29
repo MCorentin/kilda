@@ -1,20 +1,19 @@
-
 #!/usr/bin/env nextflow
 
 nextflow.enable.dsl = 2
 
 // Importing processes from the modules:
-import { ExtractFastaFromBed }                  from './modules/kiv2_create_kmers_DB.nf'
-import { CountKmersRegion }                     from './modules/kiv2_create_kmers_DB.nf'
-import { CountKmersOutsideRegion }              from './modules/kiv2_create_kmers_DB.nf'
-import { FilterKmersOccuringOutsideRegion }     from './modules/kiv2_create_kmers_DB.nf'
-import { RemoveCommonKmers }                    from './modules/kiv2_create_kmers_DB.nf'
-import { OutputFasta }                          from './modules/kiv2_create_kmers_DB.nf'
+include { ExtractFastaFromBed }                  from './modules/kiv2_create_kmers_DB.nf'
+include { CountKmersRegion }                     from './modules/kiv2_create_kmers_DB.nf'
+include { CountKmersOutsideRegion }              from './modules/kiv2_create_kmers_DB.nf'
+include { FilterKmersOccuringOutsideRegion }     from './modules/kiv2_create_kmers_DB.nf'
+include { RemoveCommonKmers }                    from './modules/kiv2_create_kmers_DB.nf'
+include { OutputFasta }                          from './modules/kiv2_create_kmers_DB.nf'
 
-import { CreateFastaKmers }     from './modules/kiv2_counts.nf'
-import { CountKmers }           from './modules/kiv2_counts.nf'
-import { DumpKmers }            from './modules/kiv2_counts.nf'
-import { CreateSampleMap }      from './modules/kiv2_counts.nf'
+include { CreateFastaKmers }     from './modules/kiv2_counts.nf'
+include { CountKmers }           from './modules/kiv2_counts.nf'
+include { DumpKmers }            from './modules/kiv2_counts.nf'
+include { CreateSampleMap }      from './modules/kiv2_counts.nf'
 
 
 // Workflow to get the kmers unique to the KIV2 regions:
@@ -117,38 +116,32 @@ workflow kiv2_counts {
 // Builds the kmer database if the lists of kmers are not specified in the config file
 // Launch the KIV2 counts if a samplesheet is provided in the config file
 workflow {
-    build_DB = false
-
     // Checking mandatory options:
     if(params.kilda_dir == "")          error: "ERROR: The path to KILDA installation directory must be provided (see config: 'kilda_dir')"
     if(params.wdir == "")               error: "ERROR: The path to the working directory must be provided (see config: 'wdir')"
     if(params.input.kmer_size < 1)      error: "ERROR: The kmer size must be > 0 (see config: 'kmer_size')"
 
-    // If theses files are missing we are building the kmer DB from scratch:
-    if(params.input.kmer_DB_dir == "")  build_DB = true
-    if(params.input.kiv2_kmers == "")   build_DB = true
-    if(params.input.norm_kmers == "")   build_DB = true
-
-    if(build_DB == true) {
+    if(params.input.build_DB) {
+        if(params.input.kmer_DB_outdir == "")   error: "ERROR: You need to provide a kmer DB directory (see config: 'kmer_DB_outdir')"
         if(params.input.genome_fasta == "")     error: "ERROR: A reference genome is needed to build the Kmer database (see config: 'genome_fasta')"
         if(params.input.genome_fai == "")       error: "ERROR: The reference genome needs to be indexed with samtools (see config: 'genome_fai')"
         if(params.input.norm_bed == "")         error: "ERROR: A bed delimiting the normalisation region(s) is needed to build the Kmer database  (see config: 'norm_bed')"
         if(params.input.kiv2_bed == "")         error: "ERROR: A bed delimiting the KIV2 region is needed to build the Kmer database  (see config: 'kiv2_bed')"
 
         // We fill the values with the built database:
-        params.input.kmer_DB_dir = "${kilda_dir}/data/kmer_DB/"
-        params.input.kiv2_kmers  = "${kmer_DB_dir}/KIV2_kmers_6copies_specific.tsv"
-        params.input.norm_kmers  = "${kmer_DB_dir}/Norm_kmers_1copies_specific.tsv"
+        params.input.kiv2_kmers     = "${kmer_DB_outdir}/KIV2_kmers_6copies_specific.tsv"
+        params.input.norm_kmers     = "${kmer_DB_outdir}/Norm_kmers_1copies_specific.tsv"
 
         prepare_kmers_DB()
         // Add some QCs ?
     }
 
     // If a samplesheet is provided, we count the kmers for the samples:
-    if(params.input.samplesheet) {
+    if(params.input.count_kiv2) {
         if(params.input.kiv2_kmers == "")   error: "ERROR: The directory to the list of KIV2 kmers must be provided to count the KIV2 (see config: 'kiv2_kmers')"
         if(params.input.norm_kmers == "")   error: "ERROR: The directory to the list of Normalisation kmers must be provided to count the KIV2 (see config: 'norm_kmers')"
-        
+        if(params.input.samplesheet == "")  error: "ERROR: A samplesheet must be provided to count the KIV2 (see config: 'samplesheet')"
+
         kiv2_counts()
     }
 }
