@@ -45,7 +45,7 @@ process CountKmers {
 
         """
         set -eo pipefail
-        ${params.tools.jellyfish} count -t ${task.cpus} -m ${params.input.kmer_size} -s 100M -C -o ${jellyfish_kmers} --if=${norm_kiv2_fasta} <(zcat -f ${fastqs.join(" ")});
+        ${params.tools.jellyfish} count -t ${task.cpus} -m ${params.kmer_size} -s 100M -C -o ${jellyfish_kmers} --if=${norm_kiv2_fasta} <(zcat -f ${fastqs.join(" ")});
         """
 }
 
@@ -115,8 +115,8 @@ process kilda {
         kiv2_outdir = "kilda_kiv2_CNs/"
         
         rsid_param = ""
-        if("${params.input.rsids_list}" != "") {
-            rsid_param = " -r ${params.input.rsids_list}"
+        if("${params.rsids_list}" != "") {
+            rsid_param = " -r ${params.rsids_list}"
         }
 
         """

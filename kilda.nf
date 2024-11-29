@@ -5,6 +5,7 @@ nextflow.enable.dsl = 2
 // Importing processes from the modules:
 include { ExtractFastaFromBed }                  from './modules/kiv2_create_kmers_DB.nf'
 include { CountKmersRegion }                     from './modules/kiv2_create_kmers_DB.nf'
+include { FilterOnOccurence }                    from './modules/kiv2_create_kmers_DB.nf'
 include { CountKmersOutsideRegion }              from './modules/kiv2_create_kmers_DB.nf'
 include { FilterKmersOccuringOutsideRegion }     from './modules/kiv2_create_kmers_DB.nf'
 include { RemoveCommonKmers }                    from './modules/kiv2_create_kmers_DB.nf'
@@ -19,16 +20,16 @@ include { CreateSampleMap }      from './modules/kiv2_counts.nf'
 // Workflow to get the kmers unique to the KIV2 regions:
 workflow prepare_kmers_kiv2 {
     main:
-        kiv2_fasta = ExtractFastaFromBed(file(params.input.genome_fasta), 
-                                         file(params.input.genome_fai), 
-                                         file(params.input.kiv2_bed))
+        kiv2_fasta = ExtractFastaFromBed(file(params.kmer_DB.genome_fasta), 
+                                         file(params.kmer_DB.genome_fai), 
+                                         file(params.kmer_DB.kiv2_bed))
 
         kiv2_kmers = CountKmersRegion(kiv2_fasta)
         kiv2_kmers_filt = FilterOnOccurence(kiv2_kmers, 6)
     
-        kiv2_outside_kmers = CountKmersOutsideRegion(file(params.input.genome_fasta), 
-                                                     file(params.input.genome_fai), 
-                                                     file(params.input.kiv2_bed))
+        kiv2_outside_kmers = CountKmersOutsideRegion(file(params.kmer_DB.genome_fasta), 
+                                                     file(params.kmer_DB.genome_fai), 
+                                                     file(params.kmer_DB.kiv2_bed))
         FilterKmersOccuringOutsideRegion(kiv2_kmers_filt, kiv2_outside_kmers)
 
     emit:
@@ -38,18 +39,16 @@ workflow prepare_kmers_kiv2 {
 // Workflow to get the kmers unique to the normalisation region(s) (recommended: the LPA gene (without the KIV2 region)):
 workflow prepare_kmers_norm {
     main:
-        // norm_bed = Channel.fromPath("${params.input.norm_bed}")
-        norm_fasta = ExtractFastaFromBed(file(params.input.genome_fasta), 
-                                         file(params.input.genome_fai), 
-                                         file(params.input.norm_bed))
+        norm_fasta = ExtractFastaFromBed(file(params.kmer_DB.genome_fasta), 
+                                         file(params.kmer_DB.genome_fai), 
+                                         file(params.kmer_DB.norm_bed))
 
         norm_kmers = CountKmersRegion(norm_fasta)
         norm_kmers_filt = FilterOnOccurence(norm_kmers, 1)
         
-        // norm_bed = Channel.fromPath("${params.input.norm_bed}")
-        norm_outside_kmers = CountKmersOutsideRegion(file(params.input.genome_fasta), 
-                                                     file(params.input.genome_fai), 
-                                                     file(params.input.norm_bed))
+        norm_outside_kmers = CountKmersOutsideRegion(file(params.kmer_DB.genome_fasta), 
+                                                     file(params.kmer_DB.genome_fai), 
+                                                     file(params.kmer_DB.norm_bed))
         FilterKmersOccuringOutsideRegion(norm_kmers_filt, norm_outside_kmers)
         
     emit:
@@ -72,19 +71,19 @@ workflow prepare_kmers_DB {
 // Workflow to count the KIV2 repetitions:
 workflow kiv2_counts {
     // Optional inputs: we use an empty list "[]" when the file is not provided ([] is a valid path in nextflow):
-    rsids_ch = Channel.of(params.input.rsids_list).map{ f -> if(f) { return file(f) } else { return [] } }
-    fasta_ch = Channel.of(params.input.genome_fasta).map{ f -> if(f) { return file(f) } else { return [] } }
-    fai_ch = Channel.of(params.input.genome_fai).map{ f -> if(f) { return file(f) } else { return [] } }
-    kiv2_bed_ch = Channel.of(params.input.kiv2_bed).map{ f -> if(f) { return file(f) } else { return [] } }
-    norm_bed_ch = Channel.of(params.input.norm_bed).map{ f -> if(f) { return file(f) } else { return [] } }
+    rsids_ch = Channel.of(params.rsids_list).map{ f ->        if(f) { return file(f) } else { return [] } }
+    fasta_ch = Channel.of(params.kmer_DB.genome_fasta).map{ f ->    if(f) { return file(f) } else { return [] } }
+    fai_ch = Channel.of(params.kmer_DB.genome_fai).map{ f ->        if(f) { return file(f) } else { return [] } }
+    kiv2_bed_ch = Channel.of(params.kmer_DB.kiv2_bed).map{ f ->     if(f) { return file(f) } else { return [] } }
+    norm_bed_ch = Channel.of(params.kmer_DB.norm_bed).map{ f ->     if(f) { return file(f) } else { return [] } }
 
-    norm_kiv2_fasta = CreateFastaKmers(file(params.input.kiv2_kmers),
-                                       file(params.input.norm_kmers),
+    norm_kiv2_fasta = CreateFastaKmers(file(params.count.kiv2_kmers),
+                                       file(params.count.norm_kmers),
                                        rsids_ch)
 
     // Read each sample as a tuple (sampleID, list of files) from the samplesheet.
     // Branch to accept a mix of FASTQs and BAMs:
-    bam_or_fastq_ch = Channel.fromPath("${params.input.samplesheet}").splitCsv(sep: '\t').
+    bam_or_fastq_ch = Channel.fromPath("${params.count.samplesheet}").splitCsv(sep: '\t').
      branch { v ->
                 bams: v[1].endsWith("bam")
                     return [ v[0], file(v[1]), file(v[1]+".bai") ]
@@ -105,8 +104,8 @@ workflow kiv2_counts {
     counts_ch = DumpKmers(jelly_kmers_ch).collect()
     counts_list_ch = CreateSampleMap(counts_ch)
     
-    kilda(file(params.input.kiv2_kmers),
-          file(params.input.norm_kmers),
+    kilda(file(params.count.kiv2_kmers),
+          file(params.count.norm_kmers),
           file(params.tools.kilda),
           counts_list_ch)
 }
@@ -119,28 +118,28 @@ workflow {
     // Checking mandatory options:
     if(params.kilda_dir == "")          error: "ERROR: The path to KILDA installation directory must be provided (see config: 'kilda_dir')"
     if(params.wdir == "")               error: "ERROR: The path to the working directory must be provided (see config: 'wdir')"
-    if(params.input.kmer_size < 1)      error: "ERROR: The kmer size must be > 0 (see config: 'kmer_size')"
+    if(params.kmer_size < 1)      error: "ERROR: The kmer size must be > 0 (see config: 'kmer_size')"
 
-    if(params.input.build_DB) {
-        if(params.input.kmer_DB_outdir == "")   error: "ERROR: You need to provide a kmer DB directory (see config: 'kmer_DB_outdir')"
-        if(params.input.genome_fasta == "")     error: "ERROR: A reference genome is needed to build the Kmer database (see config: 'genome_fasta')"
-        if(params.input.genome_fai == "")       error: "ERROR: The reference genome needs to be indexed with samtools (see config: 'genome_fai')"
-        if(params.input.norm_bed == "")         error: "ERROR: A bed delimiting the normalisation region(s) is needed to build the Kmer database  (see config: 'norm_bed')"
-        if(params.input.kiv2_bed == "")         error: "ERROR: A bed delimiting the KIV2 region is needed to build the Kmer database  (see config: 'kiv2_bed')"
+    if(params.kmer_DB.build_DB) {
+        if(params.kmer_DB.outdir == "")   error: "ERROR: You need to provide a kmer DB directory (see config: 'outdir')"
+        if(params.kmer_DB.genome_fasta == "")     error: "ERROR: A reference genome is needed to build the Kmer database (see config: 'genome_fasta')"
+        if(params.kmer_DB.genome_fai == "")       error: "ERROR: The reference genome needs to be indexed with samtools (see config: 'genome_fai')"
+        if(params.kmer_DB.norm_bed == "")         error: "ERROR: A bed delimiting the normalisation region(s) is needed to build the Kmer database  (see config: 'norm_bed')"
+        if(params.kmer_DB.kiv2_bed == "")         error: "ERROR: A bed delimiting the KIV2 region is needed to build the Kmer database  (see config: 'kiv2_bed')"
 
         // We fill the values with the built database:
-        params.input.kiv2_kmers     = "${kmer_DB_outdir}/KIV2_kmers_6copies_specific.tsv"
-        params.input.norm_kmers     = "${kmer_DB_outdir}/Norm_kmers_1copies_specific.tsv"
+        params.count.kiv2_kmers     = "${params.kmer_DB.outdir}/KIV2_kmers_6copies_specific.tsv"
+        params.count.norm_kmers     = "${params.kmer_DB.outdir}/Norm_kmers_1copies_specific.tsv"
 
         prepare_kmers_DB()
         // Add some QCs ?
     }
 
     // If a samplesheet is provided, we count the kmers for the samples:
-    if(params.input.count_kiv2) {
-        if(params.input.kiv2_kmers == "")   error: "ERROR: The directory to the list of KIV2 kmers must be provided to count the KIV2 (see config: 'kiv2_kmers')"
-        if(params.input.norm_kmers == "")   error: "ERROR: The directory to the list of Normalisation kmers must be provided to count the KIV2 (see config: 'norm_kmers')"
-        if(params.input.samplesheet == "")  error: "ERROR: A samplesheet must be provided to count the KIV2 (see config: 'samplesheet')"
+    if(params.count.count_kiv2) {
+        if(params.count.kiv2_kmers == "")   error: "ERROR: The directory to the list of KIV2 kmers must be provided to count the KIV2 (see config: 'kiv2_kmers')"
+        if(params.count.norm_kmers == "")   error: "ERROR: The directory to the list of Normalisation kmers must be provided to count the KIV2 (see config: 'norm_kmers')"
+        if(params.count.samplesheet == "")  error: "ERROR: A samplesheet must be provided to count the KIV2 (see config: 'samplesheet')"
 
         kiv2_counts()
     }

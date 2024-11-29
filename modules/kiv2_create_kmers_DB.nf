@@ -34,7 +34,7 @@ process CountKmersRegion {
         
         """
         set -eo pipefail
-        ${params.tools.jellyfish} count -C -t ${task.cpus} -m ${params.input.kmer_size} -s 10G -o ${kmers} ${region_fasta}
+        ${params.tools.jellyfish} count -C -t ${task.cpus} -m ${params.kmer_size} -s 10G -o ${kmers} ${region_fasta}
         """
 }
 
@@ -77,7 +77,7 @@ process CountKmersOutsideRegion {
         ${params.tools.bedtools} intersect -v -a genome.bed -b ${region_bed} | awk -F '\t' '{printf("%s:%d-%s\\n",\$1,int(\$2)+1,\$3);}' > genome_without_region.regions
         ${params.tools.samtools} faidx ${fasta} -r genome_without_region.regions > genome_without_region.fasta
         
-        ${params.tools.jellyfish} count -C -t ${task.cpus} -m ${params.input.kmer_size} -s 10G -o ${kmers_outside_region_count} genome_without_region.fasta
+        ${params.tools.jellyfish} count -C -t ${task.cpus} -m ${params.kmer_size} -s 10G -o ${kmers_outside_region_count} genome_without_region.fasta
         """
 }
 
@@ -107,7 +107,7 @@ process FilterKmersOccuringOutsideRegion {
 
 
 process RemoveCommonKmers {
-    publishDir "${params.input.kmer_DB_outdir}/", mode: 'copy'
+    publishDir "${params.kmer_DB.outdir}/", mode: 'copy'
     
     input:
         path(kiv2_kmers_list)
@@ -130,7 +130,7 @@ process RemoveCommonKmers {
 
 
 process OutputFasta {
-    publishDir "${params.input.kmer_DB_outdir}/", mode: 'copy'
+    publishDir "${params.kmer_DB.outdir}/", mode: 'copy'
     
     input:
         tuple(path(kiv2_unique_kmers_list), path(norm_unique_kmers_list))
