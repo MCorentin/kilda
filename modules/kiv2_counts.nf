@@ -2,8 +2,7 @@
 
 nextflow.enable.dsl = 2
 
-
-process create_fasta_kmers {
+process CreateFastaKmers {
     publishDir "${params.wdir}/", mode: 'copy'
 
     input:
@@ -33,7 +32,7 @@ process create_fasta_kmers {
 
 
 // Counting all the kmers in the fastq files
-process count_kmers {
+process CountKmers {
     input:
         tuple val(sampleID), path(fastqs)
         val(norm_kiv2_fasta)
@@ -52,7 +51,7 @@ process count_kmers {
 
 
 // Querying the relevant kmers (KIV2 + normalisation regions)
-process dump_kmers {
+process DumpKmers {
     publishDir "${params.wdir}/counts/", mode: 'copy'
 
     input:
@@ -179,45 +178,3 @@ process bam_to_fastq {
         """
 }
 
-
-workflow {
-    // Optional inputs: we use an empty list "[]" when the file is not provided ([] is a valid path in nextflow):
-    rsids_ch = Channel.of(params.input.rsids_list).map{ f -> if(f) { return file(f) } else { return [] } }
-
-    fasta_ch = Channel.of(params.input.genome_fasta).map{ f -> if(f) { return file(f) } else { return [] } }
-    fai_ch = Channel.of(params.input.genome_fai).map{ f -> if(f) { return file(f) } else { return [] } }
-    kiv2_bed_ch = Channel.of(params.input.kiv2_bed).map{ f -> if(f) { return file(f) } else { return [] } }
-    norm_bed_ch = Channel.of(params.input.norm_bed).map{ f -> if(f) { return file(f) } else { return [] } }
-
-    norm_kiv2_fasta = create_fasta_kmers(file(params.input.kiv2_kmers),
-                                         file(params.input.norm_kmers),
-                                         rsids_ch)
-
-    // Read each sample as a tuple (sampleID, list of files) from the samplesheet.
-    // Branch to accept a mix of FASTQs and BAMs:
-    bam_or_fastq_ch = Channel.fromPath("${params.input.samplesheet}").splitCsv(sep: '\t').
-     branch { v ->
-                bams: v[1].endsWith("bam")
-                    return [ v[0], file(v[1]), file(v[1]+".bai") ]
-                fastqs: true
-            }
-
-    bams_ch = bam_to_fastq(kiv2_bed_ch.first(),
-                           norm_bed_ch.first(),
-                           fasta_ch.first(),
-                           fai_ch.first(),
-                           bam_or_fastq_ch.bams).fastq.map{ [ it[0], [file(it[1]), file(it[2])] ] }
- 
-    fastqs_ch = bam_or_fastq_ch.fastqs.map{ [ it[0], it[1].split(" ").collect(fastq -> file(fastq)) ] }
-  
-    input_ch = bams_ch.mix(fastqs_ch)
-
-    jelly_kmers_ch = count_kmers(input_ch, norm_kiv2_fasta.first())
-    counts_ch = dump_kmers(jelly_kmers_ch).collect()
-    counts_list_ch = CreateSampleMap(counts_ch)
-    
-    kilda(file(params.input.kiv2_kmers),
-          file(params.input.norm_kmers),
-          file(params.tools.kilda),
-          counts_list_ch)
-}

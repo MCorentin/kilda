@@ -2,8 +2,7 @@
 
 nextflow.enable.dsl = 2
 
-
-process extract_fasta_from_bed {
+process ExtractFastaFromBed {
     input:
         path(fasta)
         path(fai)
@@ -23,7 +22,7 @@ process extract_fasta_from_bed {
         """
 }
 
-process count_kmers_region {
+process CountKmersRegion {
     input:
         path(region_fasta)
         
@@ -40,7 +39,7 @@ process count_kmers_region {
 }
 
 
-process filter_on_occurence {
+process FilterOnOccurence {
     input:
         path(kmers)
         val(occurence)
@@ -58,7 +57,7 @@ process filter_on_occurence {
 }
 
 
-process count_kmers_outside_region {
+process CountKmersOutsideRegion {
     input:
         path(fasta)
         path(fai)
@@ -83,7 +82,7 @@ process count_kmers_outside_region {
 }
 
 
-process filter_kmers_occuring_outside_region {
+process FilterKmersOccuringOutsideRegion {
     input:
         path(kmers_filtered_dump)
         path(kmers_outside_region_count)
@@ -107,13 +106,13 @@ process filter_kmers_occuring_outside_region {
 }
 
 
-process remove_common_kmers {
-    publishDir "${params.kmer_DB_outdir}/", mode: 'copy'
+process RemoveCommonKmers {
+    publishDir "${params.input.kmer_DB_dir}/", mode: 'copy'
     
     input:
         path(kiv2_kmers_list)
         path(norm_kmers_list)
-        
+
     output:
         tuple(path(kiv2_unique_kmers_list), path(norm_unique_kmers_list))
         
@@ -130,8 +129,8 @@ process remove_common_kmers {
 }
 
 
-process output_fasta {
-    publishDir "${params.kmer_DB_outdir}/", mode: 'copy'
+process OutputFasta {
+    publishDir "${params.input.kmer_DB_dir}/", mode: 'copy'
     
     input:
         tuple(path(kiv2_unique_kmers_list), path(norm_unique_kmers_list))
@@ -150,51 +149,4 @@ process output_fasta {
         awk '{print ">kmer_KIV2_"NR"\\n"\$1 }' ${kiv2_unique_kmers_list} > ${kiv2_unique_kmers_fasta}
         awk '{print ">kmer_NORM_"NR"\\n"\$1 }' ${norm_unique_kmers_list} > ${norm_unique_kmers_fasta}
         """
-}
-
-
-workflow prepare_kmers_kiv2 {
-    main:
-        KIV2_bed = Channel.fromPath("${params.input.kiv2_bed}")
-        
-        KIV2_fasta = extract_fasta_from_bed(file(params.input.genome_fasta),file(params.input.genome_fai),KIV2_bed)
-        kiv2_kmers = count_kmers_region(KIV2_fasta)
-        
-        kiv2_kmers_filt = filter_on_occurence(kiv2_kmers, 6)
-        
-        kiv2_bed = Channel.fromPath("${params.input.kiv2_bed}")
-        kiv2_outside_kmers = count_kmers_outside_region(file(params.input.genome_fasta), file(params.input.genome_fai), kiv2_bed)
-        
-        filter_kmers_occuring_outside_region(kiv2_kmers_filt, kiv2_outside_kmers)
-
-    emit:
-        filter_kmers_occuring_outside_region.out
-}
-
-// Normalisation region (recommended: the exons of LDLR, APOB and PCSK9): 
-workflow prepare_kmers_norm {
-    main:
-        norm_bed = Channel.fromPath("${params.input.norm_bed}")
-        
-            norm_fasta = extract_fasta_from_bed(file(params.input.genome_fasta),file(params.input.genome_fai),norm_bed)
-            norm_kmers = count_kmers_region(norm_fasta)
-        
-        norm_kmers_filt = filter_on_occurence(norm_kmers, 1)
-        
-        norm_bed = Channel.fromPath("${params.input.norm_bed}")
-        norm_outside_kmers = count_kmers_outside_region(file(params.input.genome_fasta),file(params.input.genome_fai),norm_bed)
-        
-        filter_kmers_occuring_outside_region(norm_kmers_filt, norm_outside_kmers)
-        
-    emit:
-        filter_kmers_occuring_outside_region.out
-}
-
-
-workflow {
-   kiv2_kmers_list = prepare_kmers_kiv2()
-   norm_kmers_list = prepare_kmers_norm()
-
-   unique_kmers_lists = remove_common_kmers(kiv2_kmers_list, norm_kmers_list)
-   output_fasta(unique_kmers_lists)
 }
