@@ -130,7 +130,7 @@ process kilda {
 }
 
 
-process bam_to_fastq {
+process BamToFastq {
     tag "${sample}"
     afterScript "rm -rf TMP"
 

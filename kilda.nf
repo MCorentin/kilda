@@ -15,6 +15,8 @@ include { CreateFastaKmers }     from './modules/kiv2_counts.nf'
 include { CountKmers }           from './modules/kiv2_counts.nf'
 include { DumpKmers }            from './modules/kiv2_counts.nf'
 include { CreateSampleMap }      from './modules/kiv2_counts.nf'
+include { BamToFastq}            from './modules/kiv2_counts.nf'
+include { kilda }                from './modules/kiv2_counts.nf'
 
 
 // Workflow to get the kmers unique to the KIV2 regions:
@@ -90,11 +92,11 @@ workflow kiv2_counts {
                 fastqs: true
             }
 
-    bams_ch = bam_to_fastq(kiv2_bed_ch.first(),
-                           norm_bed_ch.first(),
-                           fasta_ch.first(),
-                           fai_ch.first(),
-                           bam_or_fastq_ch.bams).fastq.map{ [ it[0], [file(it[1]), file(it[2])] ] }
+    bams_ch = BamToFastq(kiv2_bed_ch.first(),
+                         norm_bed_ch.first(),
+                         fasta_ch.first(),
+                         fai_ch.first(),
+                         bam_or_fastq_ch.bams).fastq.map{ [ it[0], [file(it[1]), file(it[2])] ] }
  
     fastqs_ch = bam_or_fastq_ch.fastqs.map{ [ it[0], it[1].split(" ").collect(fastq -> file(fastq)) ] }
   
@@ -132,7 +134,6 @@ workflow {
         params.count.norm_kmers     = "${params.kmer_DB.outdir}/Norm_kmers_1copies_specific.tsv"
 
         prepare_kmers_DB()
-        // Add some QCs ?
     }
 
     // If a samplesheet is provided, we count the kmers for the samples:

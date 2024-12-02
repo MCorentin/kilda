@@ -3,16 +3,15 @@
 KILDA (KIv2 Length Determined from a kmer Analysis) provides an alignment-free estimation of the number of KIV2 (Kringle IV type 2) repeats from fastq files. 
 The KIV2 copy number is estimated from the occurences of kmers specific to the KIV2 sequence, normalised by kmers from one or more normalisation region(s).
 
-The project is composed of three main scripts:
+The project is composed of three main parts:
 
- 1. *./bin/kiv2_create_kmers_DB.nf*: nextflow script to generate the lists of kmers specific to KIV2 and the normalisation region(s)
+ 1. *./modules/kiv2_create_kmers_DB.nf*: contains the processes to generate the lists of kmers specific to KIV2 and the normalisation region(s)
  
- 2. *./bin/kilda.nf*: nextflow script to count the occurences of the specific kmers from FASTQ files
+ 2. *./modules/kiv2_counts.nf*: nextflow script to count the occurences of the specific kmers from FASTQ files
  
  3. *./bin/kilda.py*: python script to estimate the number of KIV2 repeats, based on the kmer counts
  
 A list of kmers is provided with this repository (so running *kiv2_create_kmers_DB.nf* is optional).
-
 
 ## Table of Contents
 
@@ -158,8 +157,11 @@ python3 ./bin/kilda.py \
 
 ## kiv2_create_kmers_DB
 
-Nextflow script to create the lists of kmers specific to the KIV2 and the normalisation regions (given as bed files). Alternatively, you can use the lists of kmers
-available in *./data/kmers\_GRCh38\_LPA\_K31/*.
+Nextflow script to create the lists of kmers specific to the KIV2 and the normalisation regions (given as bed files). Alternatively, you can use the lists of kmers available in *./data/kmers\_GRCh38\_LPA\_K31/*.
+
+The list of kmers have been generated with the following fasta files: [GRCh38](https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/GRCh38.primary_assembly.genome.fa.gz "GRCh38 primary assembly from GenCode") and the bed files *./data/KIV2_hg38.bed* and *./data/LPA_hg38.bed*.
+
+and [GRCh37](https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/GRCh37_mapping/GRCh37.primary_assembly.genome.fa.gz "GRCh37 primary assembly from GenCode")
 
 A template config file for this nextflow script is available in *./confs/kilda_from_scratch.conf*
 
