@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 
 global VERSION
-VERSION = "1.1.0"
+VERSION = "1.3.0"
 
 
 def print_version():
@@ -114,7 +114,6 @@ def check_arguments(counts_list_file, kiv_kmers_file, lpa_kmers_file, rsids_kmer
     elif not os.path.isfile(counts_list_file):
         sys.exit("Error for option -c/--counts: '"+str(counts_list_file)+"' is not a file.")
 
-
     # Checking if kiv_kmers_file is provided and exists:
     if(kiv_kmers_file == None):
         sys.exit("The -k/--kiv argument is mandatory ('None' found). Use -h for usage.")
@@ -152,10 +151,10 @@ def read_kmer_file(kmer_file):
     # Strange, but not critical, so just write a warning to the user:
     kmer_len = len(kmer_df.at[0, 'kmer'])
     if(not(all(len(kmer) == kmer_len for kmer in kmer_df.loc[:,'kmer']))):
-        print("Warning ! For '"+kmer_file+"' not all kmers have the same length! Dectected length: "+str(kmer_len))
+        print("Warning ! For '"+kmer_file+"' not all kmers have the same length! Detected length: "+str(kmer_len))
 
     return kmer_df
-        
+
 
 def read_rsids_file(rsids_file, verbose_on):
     """From a file containing a list of ref and alt kmers for different snps, 
