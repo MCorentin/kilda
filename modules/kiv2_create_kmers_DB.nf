@@ -138,7 +138,6 @@ process OutputFasta {
     output:
         tuple(path(kiv2_unique_kmers_fasta), path(norm_unique_kmers_fasta))
 
-        
     script:
         kiv2_unique_kmers_fasta = "${kiv2_unique_kmers_list.baseName}.fasta"
         norm_unique_kmers_fasta = "${norm_unique_kmers_list.baseName}.fasta"
