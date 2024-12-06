@@ -105,7 +105,6 @@ process kilda {
     input:
        path(kiv2_kmers)
        path(norm_kmers)
-       path(kilda_py)
        path(counts_list)
     
     output:
@@ -122,7 +121,7 @@ process kilda {
         """
         set -eo pipefail
 
-        ${params.tools.python} ${kilda_py} \
+        kilda.py \
         -c ${counts_list} -o ${kiv2_outdir} -v -p \
         -k ${kiv2_kmers} -l ${norm_kmers} \
         ${rsid_param}

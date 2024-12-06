@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Script to compute the KIV2 copy numbers from the ratio of occurences of curated 
 # kmers on the KIV2 and Normalisation region.
 
