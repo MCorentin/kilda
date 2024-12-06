@@ -337,3 +337,21 @@ If the verbose option is set (-v), then a report for each sample will be written
         CN = 34.19
 ```
 
+
+
+
+
+
+        // If beds not provided: we extract all the reads:
+        cmd_collate = "${params.tools.samtools} collate -f --threads ${Math.max(1,(task.cpus as int) -2)} -O -u --no-PG --reference ${fasta} ${bam} TMP/tmp.collate"
+        cmd_fastq = "${params.tools.samtools} fastq -n --threads 1 -1 TMP/${sample}.R1.fq.gz -2 TMP/${sample}.R2.fq.gz -s /dev/null -0 /dev/null"
+        cmd_b2f = "${cmd_collate} | ${cmd_fastq}"
+
+        // If beds provided: we extract only the corresponding regions:
+        if(kiv2bed && normbed) {
+            cmd_cat_bed = "cat ${kiv2bed} ${normbed} > TMP/select.bed"
+
+            cmd_view = "${params.tools.samtools} view -F '3844' --uncompressed -O BAM  -M -L TMP/select.bed --threads 1 --reference ${fasta} ${bam}"
+            cmd_collate = "${params.tools.samtools} collate -f --threads ${Math.max(1,(task.cpus as int) -2)} -O -u --no-PG --reference ${fasta} \"-\" TMP/tmp.collate"
+            cmd_b2f = "${cmd_view} | ${cmd_collate} | ${cmd_fastq}"
+        } 
