@@ -102,11 +102,10 @@ workflow kiv2_counts {
         samplesheet
 
     main:
-        norm_kiv2_fasta = CreateFastaKmers(kiv2_kmers, norm_kmers, rsids)
-
         // Read each sample as a tuple (sampleID, list of files) from the samplesheet.
-        fastqs_ch = samplesheet.splitCsv(sep = '\t').map{ [it[0], it[1].split(" ").collect(fastq -> file(fastq)) ] }
+        fastqs_ch = samplesheet.splitCsv(sep: '\t').map{ [ it[0], it[1].split(" ").collect(fastq -> file(fastq)) ] }
 
+        norm_kiv2_fasta = CreateFastaKmers(kiv2_kmers, norm_kmers, rsids)
         jelly_kmers_ch = CountKmers(fastqs_ch, norm_kiv2_fasta.first())
         counts_ch = DumpKmers(jelly_kmers_ch).collect()
         counts_list_ch = CreateSampleMap(counts_ch)
