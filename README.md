@@ -138,7 +138,7 @@ KILDA can take a list of SNPs with representative reference/alternative kmers (s
 
 #### Creating a new kmer DB
 
-The following parameters must be set to create a new kmer database (instead of the one given within this repo [./data/kmers_GRCh38_LPA_k31/](./data/kmers_GRCh38_LPA_k31/).
+The following parameters must be set to create a new kmer database (instead of the one given within this repo [./data/kmers_GRCh38_LPA_k31/](./data/kmers_GRCh38_LPA_k31/)).
 
  - *build_DB*: if "true" a new kmer DB step will be run.
 
@@ -155,7 +155,9 @@ The following parameters must be set to create a new kmer database (instead of t
 The pipeline will then (i) extract the kmers from the regions defined in the beds, (ii) keep the one with the correct occurences (1 for normalisation and 6 for KIV2), (iii) remove kmers that are occuring elsewhere on the genome, and (iv) remove common kmers between the normalisation region(s) and the KIV2 region.
 
 This will produce two *.tsv* and two *.fasta* files, named as following:
+
     - For KIV2: <input_bed_name>_kmers_6copies_specific.{tsv, fasta}
+    
     - For the normalisation: <input_bed_name>_kmers_1copies_specific.{tsv, fasta}
 
 The *.tsv* files are the one needed for the KIV2 count step.
