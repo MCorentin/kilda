@@ -11,14 +11,15 @@ include { FilterKmersOccuringOutsideRegion }    from './modules/kiv2_create_kmer
 include { RemoveCommonKmers }                   from './modules/kiv2_create_kmers_DB.nf'
 include { OutputFasta }                         from './modules/kiv2_create_kmers_DB.nf'
 
-include { CreateFastaKmers }   from './modules/kiv2_counts.nf'
-include { CountKmers }         from './modules/kiv2_counts.nf'
-include { DumpKmers }          from './modules/kiv2_counts.nf'
-include { CreateSampleMap }    from './modules/kiv2_counts.nf'
-include { kilda }              from './modules/kiv2_counts.nf'
+include { CreateFastaKmers }    from './modules/kiv2_counts.nf'
+include { CountKmers }          from './modules/kiv2_counts.nf'
+include { DumpKmers }           from './modules/kiv2_counts.nf'
+include { CreateSampleMap }     from './modules/kiv2_counts.nf'
+include { kilda }               from './modules/kiv2_counts.nf'
 
 
-// Initialising the options with default values:
+// Initialising the options with default values.
+// Being replaced by the .conf file:
 kilda_dir              = "${projectDir}" // projectDir: directory where the main script is located
 params.wdir            = "${launchDir}"  // launchDir:  directory where the main script was launched 
 params.kmer_size       = 31
