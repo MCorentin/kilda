@@ -1,20 +1,31 @@
 # KILDA
 
-KILDA (KIv2 Length Determined from a kmer Analysis) provides an alignment-free estimation of the number of KIV2 (Kringle-IV type 2) repeats from FASTQ files.
-The KIV2 copy number is estimated from the occurences of kmers specific to the KIV2 sequence, normalised by kmers from one or more normalisation region(s).
+## Introduction 
+
+High concentrations of Lipoprotein(a) is a risk factor for cardiovascular diseases. This concentration is mostly genetically determined by a complex interplay between the number of Kringle-IV type 2 (KIV-2) repeats and Lp(a)-affecting genetic variants.
+
+KILDA (KIv2 Length Determined from a kmer Analysis) provides an alignment-free estimation of the number of KIV2 (Kringle-IV type 2) repeats from FASTQ files. The KIV2 copy number is estimated from the occurences of kmers specific to the KIV2 sequence, normalised by kmers from one or more normalisation region(s). KILDA can also estimate the presence of Lp(a) variants and can be used as a tool to detect high-risk individuals based on their genetic profile.
+
+We provide:
+
+ - Pre-computed sets of KIV2 and *LPA* specific kmers
+
+ - A Nextflow pipeline for streamlined and reproducible analysis (*kilda.nf*)
+
+ - A standalone Python script for flexible use (*kilda.py*)
 
 ## Table of Contents
 
-- [KILDA](#kilda)
-- [Table of Contents](#table-of-contents)
-- [Rationale](#rationale)
-- [Quick start](#quick-start)
-- [Dependencies](#dependencies)
-- [Test Dataset](#test-dataset)
-- [Launching the pipeline](#launching-the-pipeline)
+1. [Introduction](#introduction)
+2. [Table of Contents](#table-of-contents)
+3. [Rationale](#rationale)
+4. [Dependencies](#dependencies)
+5. [Test Dataset](#test-dataset)
+6. [Quick start](#quick-start)
+7. [Running the pipeline](#running-the-pipeline)
     - [The config file](#the-config-file)
     - [Input formats](#input-formats)
-    - [kilda.py](#kilda-1)
+8. [Standalone use kilda.py](#standalone-use-kildapy)
 
 ## Rationale
 
@@ -28,6 +39,64 @@ These lists have been built using [GRCh38](https://ftp.ebi.ac.uk/pub/databases/g
 
 If you want to change the normalisation region(s), see [Creating a new kmer DB](#creating-a-new-kmer-db).
 
+## Dependencies
+
+- [Nextflow](https://www.nextflow.io/docs/latest/install.html) (v21+ required)
+
+- [Singularity](https://docs.sylabs.io/guides/3.0/user-guide/installation.html)
+
+**Note:** The scripts were developed and tested on Linux (Debian release 11) using nextflow v22.04.5 and Python v3.9.2.
+
+The rest of the dependencies are listed below, 
+
+- **jellyfish** (tested with v2.2.10)
+
+- **samtools**  (tested with v1.19)
+
+- **bedtools**  (tested with v2.27.1)
+
+- **Python v3 or higher**
+
+- **The following python packages:** pandas, numpy, matplotlib (note: the following packages should be available by default: getopt, sys, os, warnings)
+
+The Singularity image can be pulled from [Sylabs](https://cloud.sylabs.io/library/mcorentin/kilda/kiv2_20240530):
+
+```shell
+singularity pull library://mcorentin/kilda/kiv2_20240530:0.2
+```
+
+Alternatively, you can build the image using the recipe provided in this repository [kiv2_20240530.def](./kiv2_20240530.def):
+
+```shell
+sudo singularity build kiv2_20240530_0.2.sif kiv2_20240530.def
+```
+
+## Test Dataset
+
+A test dataset is available under [./test_dataset/](./test_dataset), it can be launched with the following commands:
+
+```
+cd /path/to/kilda/
+
+singularity pull library://mcorentin/kilda/kiv2_20240530:0.2
+
+cd ./test_dataset/
+
+nextflow-22.04.5-all run ../kilda.nf -c kilda_test.conf
+```
+
+The analysis should run in a few minutes, and KILDA output will be available under: *./results/kilda_kiv2_CNs/kilda_kiv2.CNs*
+
+The file should contain the following results (the samples order might be different):
+```
+ID      KIV2_CN rs41272114_ref  rs41272114_alt  rs10455872_ref  rs10455872_alt  rs3798220_ref   rs3798220_alt   quantile
+HG02597 40.09   3       1       6       0       7       0       7
+HG00099 19.58   8       0       0       12      7       0       0
+HG00126 24.22   8       0       7       1       4       4       2
+NA21141 42.58   3       0       6       0       10      0       9
+HG02601 27.94   9       0       5       1       6       0       4
+```
+
 ## Quick start
 
 The pipeline is centralised around [kilda.nf](./kilda.nf).
@@ -39,7 +108,15 @@ cd /path/to/kilda/
 singularity pull library://mcorentin/kilda/kiv2_20240530:0.2
 ```
 
-Then, create an input samplesheet, see [input formats](#input-formats), define the paths to *wdir* (default is the current folder) and *samplesheet* in the config file and launch the pipeline:
+Then:
+
+ - Create an input samplesheet, see [input formats](#input-formats)
+ 
+ - Define the path to *wdir* (default is the current folder)
+ 
+ - Define the path to *samplesheet* in the config file
+ 
+Finally, launch the pipeline:
 
 ```shell
 nextflow run /path/to/kilda.nf -c /path/to/kilda.conf
@@ -70,59 +147,7 @@ HG00123 28.53   31      		0      			2
 
 *quantile*: which decile the sample belongs to within this group
 
-## Dependencies
-
-You will need to have [NextFlow](https://www.nextflow.io/docs/latest/install.html) and [Singularity](https://docs.sylabs.io/guides/3.0/user-guide/installation.html) installed on your system.
-
-**Note: KILDA will not work with NextFlow versions lower than v21.** 
-
-**Note:** The scripts were developed and tested on Linux (Debian release 11) using nextflow 22.04.5 and Python 3.9.2.
-
-
-We made a Singularity image with the rest of the dependencies. The image can be pulled from [Sylabs](https://cloud.sylabs.io/library/mcorentin/kilda/kiv2_20240530):
-```shell
-singularity pull library://mcorentin/kilda/kiv2_20240530:0.2
-```
-
-Alternatively, you can build the image using the recipe provided in this repository [kiv2_20240530.def](./kiv2_20240530.def):
-```shell
-sudo singularity build kiv2_20240530_0.2.sif kiv2_20240530.def
-```
-
-If you do not wish, or cannot, use the provided Singularity image, you will need to have the following dependencies installed on your system:
-- **jellyfish** (tested with v2.2.10)
-- **samtools**  (tested with v1.19)
-- **bedtools**  (tested with v2.27.1)
-- **Python v3 or higher**
-- **The following python packages:** pandas, numpy, matplotlib (note: the following packages should be installed by default: getopt, sys, os, warnings)
-
-## Test Dataset
-
-A test dataset is available under [./test_dataset/](./test_dataset), it can be launched with the following commands:
-
-```
-cd /path/to/kilda/
-
-singularity pull library://mcorentin/kilda/kiv2_20240530:0.2
-
-cd ./test_dataset/
-
-nextflow-22.04.5-all run ../kilda.nf -c kilda_test.conf
-```
-
-The analysis should run in a few minutes, and KILDA output will be available under: *./results/kilda_kiv2_CNs/kilda_kiv2.CNs*
-
-The file should contain the following results (the samples order might be different):
-```
-ID      KIV2_CN rs41272114_ref  rs41272114_alt  rs10455872_ref  rs10455872_alt  rs3798220_ref   rs3798220_alt   quantile
-HG02597 40.09   3       1       6       0       7       0       7
-HG00099 19.58   8       0       0       12      7       0       0
-HG00126 24.22   8       0       7       1       4       4       2
-NA21141 42.58   3       0       6       0       10      0       9
-HG02601 27.94   9       0       5       1       6       0       4
-```
-
-## Launching the pipeline
+## Running the pipeline
 
 ### The config file
 
@@ -210,7 +235,7 @@ samtools collate -f --threads 20 -O -u --no-PG --reference reference.fasta sampl
 
 *note*: you can extract the reads corresponding to the regions of interest to speed up execution time.
 
-### Kilda.py
+### Standalone use kilda.py
 
 This python script is run as part of *kilda.nf* but can be run independently if needed. See [dependencies](#dependencies) for the list of packages to install.
 
@@ -225,8 +250,8 @@ kilda.py -c [counts_list.tsv] -k [KIV2_unique_31mer_with_rc.tsv] -l [LPA_unique_
 
 Input:
      -c/--counts          File with the list of ids and counts (generated by 'jellyfish dump') files. One id and file per line, tab_delimited (required).
-     -k/--kiv             File listing the curated KIV2 kmers. (required, default = './KIV2_unique_31mer_with_rc.tsv')
-     -l/--lpa             File listing the curated Normalisation kmers. (required, default = './LPA_unique_31mer_with_rc.tsv')
+     -k/--kiv             File listing the curated KIV2 kmers. (required, default = './KIV2_unique_31mers.tsv')
+     -l/--lpa             File listing the curated Normalisation kmers. (required, default = './LPA_unique_31mers.tsv')
      -r/--rsids           File listing rsids of interest and their ref and alt kmers. (optionnal, tab-delimited, no header)
 
 Output:
