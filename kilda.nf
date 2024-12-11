@@ -119,6 +119,7 @@ workflow kiv2_counts {
 // Builds the kmer database if params.build_DB is set to true
 // Launch the KIV2 counts if params.count_kiv2 is set to true
 workflow {
+    
     // Check for input and builds the kmer DB:
     if(params.build_DB) {
         if(params.genome_fasta == "")    error("ERROR: A reference genome is needed to build the Kmer database (see config: 'genome_fasta')")
@@ -129,8 +130,8 @@ workflow {
         println("Working directory: '"+params.wdir+"'")
 
         // We fill the values with the built database:
-        kiv2_kmers = "${params.outdir}/KIV2_kmers_6copies_specific.tsv"
-        norm_kmers = "${params.outdir}/Norm_kmers_1copies_specific.tsv"
+        // kiv2_kmers = "${params.outdir}/KIV2_kmers_6copies_specific.tsv"
+        // norm_kmers = "${params.outdir}/Norm_kmers_1copies_specific.tsv"
 
         prepare_kmers_DB(Channel.fromPath(params.genome_fasta), 
                          Channel.fromPath(params.genome_fai), 
@@ -140,14 +141,22 @@ workflow {
 
     // Check for input and counts the KIV2 repeats:
     if(params.count_kiv2) {
-        if(params.samplesheet == "")     error("ERROR: A samplesheet must be provided to count the KIV2 (see config: 'samplesheet')")
-        if(params.kiv2_kmers  == "")     error("ERROR: The directory to the list of KIV2 kmers must be provided to count the KIV2 (see config: 'kiv2_kmers')")
-        if(params.norm_kmers  == "")     error("ERROR: The directory to the list of Normalisation kmers must be provided to count the KIV2 (see config: 'norm_kmers')")
 
+        if(params.samplesheet == "")     error("ERROR: A samplesheet must be provided to count the KIV2 (see config: 'samplesheet')")
         if(params.rsids_list  == "")     prinln("rsids file not provided, KILDA will not check for variants in the kmers.")
 
-        kiv2_counts(Channel.fromPath(params.kiv2_kmers),
-                    Channel.fromPath(params.norm_kmers),
+        if(params.build_DB) { 
+            kiv2_kmers = prepare_kmers_DB.out[0]
+            norm_kmers = prepare_kmers_DB.out[1]
+        } else {
+            kiv2_kmers = params.kiv2_kmers
+            norm_kmers = params.norm_kmers
+        }
+        if(kiv2_kmers  == "")     error("ERROR: The directory to the list of KIV2 kmers must be provided to count the KIV2 (see config: 'kiv2_kmers')")
+        if(norm_kmers  == "")     error("ERROR: The directory to the list of Normalisation kmers must be provided to count the KIV2 (see config: 'norm_kmers')")
+
+        kiv2_counts(Channel.fromPath(kiv2_kmers),
+                    Channel.fromPath(norm_kmers),
                     Channel.fromPath(params.rsids_list),
                     Channel.fromPath(params.samplesheet))
     }

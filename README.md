@@ -25,7 +25,7 @@ This repository contains:
 7. [Running the pipeline](#running-the-pipeline)
     - [The config file](#the-config-file)
     - [Input formats](#input-formats)
-8. [Standalone use kilda.py](#standalone-use-kildapy)
+    - [Standalone use kilda.py](#standalone-use-kildapy)
 
 ## Rationale
 

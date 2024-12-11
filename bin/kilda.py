@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Script to compute the KIV2 copy numbers from the ratio of occurences of curated 
+# Script to compute the KIV2 copy numbers from the ratio of occurrences of curated 
 # kmers on the KIV2 and Normalisation region.
 
 # The KIV2 kmers were selected to appear accross the 6 KIV2 copies of the reference genome
@@ -36,7 +36,7 @@ def usage():
     print("     -r/--rsids           File listing rsids of interest and their ref and alt kmers. (optionnal, tab-delimited, no header)")
     print("\nOutput:")
     print("     -o/--output          The path to the output folder. (default = './kilda-output/')")
-    print("     -p/--plot            If set, will produce a pdf plot of the kmer occurences for each sample.")
+    print("     -p/--plot            If set, will produce a pdf plot of the kmer occurrences for each sample.")
     print("\nOther:")
     print("     -v/--verbose         If set, will print messages to the screen about the analysis progress.")
     print("     -h/--help            Print the usage and help and exit.")
@@ -189,49 +189,49 @@ def read_counts(counts_file):
         counts_file: a string containing the path to the output file from "jellyfish dump"
 
     Returns:
-        A pandas DataFrame with the content of the counts file (kmer occurences).
+        A pandas DataFrame with the content of the counts file (kmer occurrences).
     """
     try:
-        counts_df = pd.read_csv(counts_file, sep = '\t', index_col = False, names = ['kmer', 'occurence'], header = None)
+        counts_df = pd.read_csv(counts_file, sep = '\t', index_col = False, names = ['kmer', 'occurrence'], header = None)
     except FileNotFoundError:
         sys.exit("Error: count file: '"+str(counts_file)+"' not found. Stopping now.")
 
-    # Checking if we have actual values for the occurence column:
-    if(counts_df['occurence'].isnull().values.any()):
-        sys.exit("Error when reading '"+counts_file+"': some kmer occurences are null. Is the format of the counts file correct? tab-delimited, columns: 'kmer occurence'.\nStopping now...")
+    # Checking if we have actual values for the occurrence column:
+    if(counts_df['occurrence'].isnull().values.any()):
+        sys.exit("Error when reading '"+counts_file+"': some kmer occurrences are null. Is the format of the counts file correct? tab-delimited, columns: 'kmer occurrence'.\nStopping now...")
 
     return counts_df
 
 
 def get_kmer_CN(kiv_counts, lpa_counts, verbose_on):
-    """Compute the KIV2 CN based on the ratio of the mean occurence of KIV2 kmers vs Normalisation kmers
+    """Compute the KIV2 CN based on the ratio of the mean occurrence of KIV2 kmers vs Normalisation kmers
 
     Args:
-        kiv_counts: A pandas DataFrame with the KIV2 kmer occurences.
-        lpa_counts: A pandas DataFrame with the Normalisation kmer occurences.
+        kiv_counts: A pandas DataFrame with the KIV2 kmer occurrences.
+        lpa_counts: A pandas DataFrame with the Normalisation kmer occurrences.
         verbose_on: A boolean indicating if messages must be printed or not
 
     Returns:
         The CN as a float.
     """
-    kiv_mean = kiv_counts['occurence'].mean()
-    lpa_mean = lpa_counts['occurence'].mean()
+    kiv_mean = kiv_counts['occurrence'].mean()
+    lpa_mean = lpa_counts['occurrence'].mean()
 
-    if(verbose_on): print("\tKIV2 mean kmer occurence:'%.2f'" % kiv_mean)
-    if(verbose_on): print("\tNormalisation mean kmer occurence:'%.2f'" % lpa_mean)
+    if(verbose_on): print("\tKIV2 mean kmer occurrence:'%.2f'" % kiv_mean)
+    if(verbose_on): print("\tNormalisation mean kmer occurrence:'%.2f'" % lpa_mean)
 
     if(kiv_mean == 0 or lpa_mean == 0):
-        sys.exit("Error: the mean occurence for the KIV2 or Normalisation kmers is 0: cannot get the ratio.")
+        sys.exit("Error: the mean occurrence for the KIV2 or Normalisation kmers is 0: cannot get the ratio.")
     # lpa_mean represents the "coverage" on one copy, but we are interested in the copy number on two copies, so *2
     return (kiv_mean / lpa_mean * 2)
     
 
-def plot_occurences(kiv_counts, lpa_counts, out_filename, sample_id, CN):
-    """Plot the distribution of kmer occurences for the KIV2 and Normalisation kmers
+def plot_occurrences(kiv_counts, lpa_counts, out_filename, sample_id, CN):
+    """Plot the distribution of kmer occurrences for the KIV2 and Normalisation kmers
 
     Args:
-        kiv_counts: A pandas DataFrame with the KIV2 kmer occurences.
-        lpa_counts: A pandas DataFrame with the Normalisation  kmer occurences.
+        kiv_counts: A pandas DataFrame with the KIV2 kmer occurrences.
+        lpa_counts: A pandas DataFrame with the Normalisation  kmer occurrences.
         out_filename: The plot will be written under this filename.
         sample_id: the sample ID (will be displayed in the plot title)
         CN: The KIV2 CN (will be displayed in the plot title)
@@ -241,15 +241,15 @@ def plot_occurences(kiv_counts, lpa_counts, out_filename, sample_id, CN):
     """
     plt.figure()
         
-    plt.hist(kiv_counts['occurence'], bins = 30, alpha = 0.5, label = 'KIV2 kmers', density = True)
-    plt.hist(lpa_counts['occurence'], bins = 60, alpha = 0.5, label = 'Norm kmers', density = True)
+    plt.hist(kiv_counts['occurrence'], bins = 30, alpha = 0.5, label = 'KIV2 kmers', density = True)
+    plt.hist(lpa_counts['occurrence'], bins = 60, alpha = 0.5, label = 'Norm kmers', density = True)
     plt.legend(loc = 'upper right')
         
-    plt.xlabel('Kmer occurence')
+    plt.xlabel('Kmer occurrence')
     plt.ylabel('Kmer frequence')
     plt.title(str(sample_id) + " (CN=" + str("%.2f" % CN) + ")")
     
-    plt.xlim(0, max(kiv_counts['occurence']))
+    plt.xlim(0, max(kiv_counts['occurrence']))
     
     plt.savefig(fname = str(out_filename))
     plt.close()
@@ -273,11 +273,11 @@ def rc(seq):
     
 def process_rsid(counts_df, rsid, kmer_ref, kmer_alt):
     """
-    Counts the occurences of "kmer_ref" and "kmer_alt" in "counts_df".
+    Counts the occurrences of "kmer_ref" and "kmer_alt" in "counts_df".
     This is used to assess the presence of a rsid in the sample based on kmer counts.
     
     Args:
-        counts_df: A pandas DataFrame with the kmer occurences for one sample.
+        counts_df: A pandas DataFrame with the kmer occurrences for one sample.
         rsid: a string with the 'rsid'.
         kmer_ref: the kmer representing the reference allele of the rsid.
         kmer_alt: the kmer representing the alternative allele of the rsid.
@@ -293,12 +293,12 @@ def process_rsid(counts_df, rsid, kmer_ref, kmer_alt):
     if(ref_df.empty):
         ref_counts = np.nan
     else:
-        ref_counts = int(ref_df.at[0, 'occurence'])
+        ref_counts = int(ref_df.at[0, 'occurrence'])
     
     if(alt_df.empty):
         alt_counts = np.nan
     else:
-        alt_counts = int(alt_df.at[0, 'occurence'])
+        alt_counts = int(alt_df.at[0, 'occurrence'])
 
     return(ref_counts, alt_counts)
 
@@ -363,8 +363,8 @@ def main():
             lpa_counts_df = counts_df.loc[counts_df['source'] == "lpa"]
             unknown_df = counts_df.loc[counts_df['source'] == "unknown"]
             
-            if(verbose_on): print("\tKIV2 kmers with 0 counts: "+ str(kiv_counts_df.loc[kiv_counts_df['occurence'] == 0].shape[0]) + " / " + str(kiv_counts_df.shape[0]))
-            if(verbose_on): print("\tNormalisation kmers with 0 counts: "+ str(lpa_counts_df.loc[lpa_counts_df['occurence'] == 0].shape[0]) + " / " + str(lpa_counts_df.shape[0]))
+            if(verbose_on): print("\tKIV2 kmers with 0 counts: "+ str(kiv_counts_df.loc[kiv_counts_df['occurrence'] == 0].shape[0]) + " / " + str(kiv_counts_df.shape[0]))
+            if(verbose_on): print("\tNormalisation kmers with 0 counts: "+ str(lpa_counts_df.loc[lpa_counts_df['occurrence'] == 0].shape[0]) + " / " + str(lpa_counts_df.shape[0]))
             if(verbose_on): print("\tUnknown kmers: "+ str(unknown_df.shape[0]))
 
             if(kiv_counts_df.shape[0] == 0 or lpa_counts_df.shape[0] == 0):
@@ -375,14 +375,14 @@ def main():
             
             if(CN < 0): sys.exit("Error: CN is negative, something went wrong for sample '"+ sample_id +"'")
                 
-            # The keys of values dict will be the kiv2 CN, and the occurences of the ref and alt kmers:
+            # The keys of values dict will be the kiv2 CN, and the occurrences of the ref and alt kmers:
             values_dict = {}
             values_dict['KIV2_CN'] = CN
             
             # We add the kemrs to "values_dict" if they exist:
             if not rsids_kmers_df.empty:
                 for index, row in rsids_kmers_df.iterrows():
-                    # rsid as key, and value is a list of 2 values (the reference occurences, and the alternative occurences):
+                    # rsid as key, and value is a list of 2 values (the reference occurrences, and the alternative occurrences):
                     ref_occ, alt_occ = process_rsid(counts_df, row['rsid'], row['kmer_ref'], row['kmer_alt']) 
                     values_dict[row['rsid']+"_ref"] = ref_occ
                     values_dict[row['rsid']+"_alt"] = alt_occ
@@ -391,7 +391,7 @@ def main():
             
             if(plot_on):
                 plot_filename = str(output_folder) + "/plots/" + str(sample_id) + "_cov.pdf"
-                plot_occurences(kiv_counts_df, lpa_counts_df, plot_filename, sample_id, CN)
+                plot_occurrences(kiv_counts_df, lpa_counts_df, plot_filename, sample_id, CN)
                 
     
     # For each sample, we have a dictionnary corresponding to the columns (as keys).
