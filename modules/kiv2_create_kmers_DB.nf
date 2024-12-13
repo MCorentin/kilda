@@ -107,14 +107,15 @@ process FilterKmersOccuringOutsideRegion {
 
 
 process RemoveCommonKmers {
-    publishDir "${params.kmer_DB.outdir}/", mode: 'copy'
+    publishDir "${params.outdir}/", mode: 'copy'
     
     input:
         path(kiv2_kmers_list)
         path(norm_kmers_list)
 
     output:
-        tuple(path(kiv2_unique_kmers_list), path(norm_unique_kmers_list))
+        path(kiv2_unique_kmers_list), emit: kiv2_unique_list
+        path(norm_unique_kmers_list), emit: norm_unique_list
         
     script:
         kiv2_unique_kmers_list = "${kiv2_kmers_list.baseName}.tsv"
@@ -130,7 +131,7 @@ process RemoveCommonKmers {
 
 
 process OutputFasta {
-    publishDir "${params.kmer_DB.outdir}/", mode: 'copy'
+    publishDir "${params.outdir}/", mode: 'copy'
     
     input:
         tuple(path(kiv2_unique_kmers_list), path(norm_unique_kmers_list))

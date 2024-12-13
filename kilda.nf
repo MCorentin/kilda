@@ -11,16 +11,15 @@ include { FilterKmersOccuringOutsideRegion }    from './modules/kiv2_create_kmer
 include { RemoveCommonKmers }                   from './modules/kiv2_create_kmers_DB.nf'
 include { OutputFasta }                         from './modules/kiv2_create_kmers_DB.nf'
 
-include { CreateFastaKmers }    from './modules/kiv2_counts.nf'
-include { CountKmers }          from './modules/kiv2_counts.nf'
-include { DumpKmers }           from './modules/kiv2_counts.nf'
-include { CreateSampleMap }     from './modules/kiv2_counts.nf'
-include { kilda }               from './modules/kiv2_counts.nf'
+include { CreateFastaKmers }                    from './modules/kiv2_counts.nf'
+include { CountKmers }                          from './modules/kiv2_counts.nf'
+include { DumpKmers }                           from './modules/kiv2_counts.nf'
+include { CreateSampleMap }                     from './modules/kiv2_counts.nf'
+include { kilda }                               from './modules/kiv2_counts.nf'
 
-
-// Initialising the options with default values.
-// Being replaced by the .conf file:
+// Initialising the options with default values:
 kilda_dir              = "${projectDir}" // projectDir: directory where the main script is located
+// Being replaced by the .conf file:
 params.wdir            = "${launchDir}"  // launchDir:  directory where the main script was launched 
 params.kmer_size       = 31
 
@@ -36,7 +35,12 @@ params.norm_kmers      = ""
 params.rsids_list      = ""
 
 // Checking the params values:
-if(params.kmer_size < 1)      error("ERROR: The kmer size must be > 0 (see config: 'kmer_size')")
+if(params.kmer_size < 1)                                            error("\nERROR: The kmer size must be > 0 (see config: 'kmer_size')")
+// If we make a new kmer DB, then the options to indicate the list of kmers must not be set
+// (since we are going to use the one produced from the "kmer_DB" step!)
+if(params.build_DB && 
+    params.count_kiv2 && 
+        (params.kiv2_kmers != "" || params.norm_kmers != ""))       error("\nERROR: conflict in the config file: if 'build_DB' is true, 'kiv2_kmers' and 'norm_kmers' must be empty") 
 
 // Workflow to get the kmers unique to the KIV2 regions:
 workflow prepare_kmers_kiv2 {
@@ -86,11 +90,12 @@ workflow prepare_kmers_DB {
         kiv2_kmers_list = prepare_kmers_kiv2(genome_fasta, genome_fai, kiv2_bed)
         norm_kmers_list = prepare_kmers_norm(genome_fasta, genome_fai, norm_bed)
 
-        unique_kmers_lists = RemoveCommonKmers(kiv2_kmers_list, norm_kmers_list)
-        OutputFasta(unique_kmers_lists)
+        RemoveCommonKmers(kiv2_kmers_list, norm_kmers_list)
+        //OutputFasta(unique_kmers_lists)
 
     emit:
-        RemoveCommonKmers.out
+        kiv2_list = RemoveCommonKmers.out.kiv2_list
+        norm_list = RemoveCommonKmers.out.norm_list
 }
 
 
@@ -122,41 +127,38 @@ workflow {
     
     // Check for input and builds the kmer DB:
     if(params.build_DB) {
-        if(params.genome_fasta == "")    error("ERROR: A reference genome is needed to build the Kmer database (see config: 'genome_fasta')")
-        if(params.genome_fai   == "")    error("ERROR: The reference genome needs to be indexed with samtools (see config: 'genome_fai')")
-        if(params.norm_bed     == "")    error("ERROR: A bed delimiting the normalisation region(s) is needed to build the Kmer database  (see config: 'norm_bed')")
-        if(params.kiv2_bed     == "")    error("ERROR: A bed delimiting the KIV2 region is needed to build the Kmer database  (see config: 'kiv2_bed')")
+        if(params.genome_fasta == "")    error("\nERROR: A reference genome is needed to build the Kmer database (see config: 'genome_fasta')")
+        if(params.genome_fai   == "")    error("\nERROR: The reference genome needs to be indexed with samtools (see config: 'genome_fai')")
+        if(params.norm_bed     == "")    error("\nERROR: A bed delimiting the normalisation region(s) is needed to build the Kmer database  (see config: 'norm_bed')")
+        if(params.kiv2_bed     == "")    error("\nERROR: A bed delimiting the KIV2 region is needed to build the Kmer database  (see config: 'kiv2_bed')")
 
         println("Working directory: '"+params.wdir+"'")
-
-        // We fill the values with the built database:
-        // kiv2_kmers = "${params.outdir}/KIV2_kmers_6copies_specific.tsv"
-        // norm_kmers = "${params.outdir}/Norm_kmers_1copies_specific.tsv"
 
         prepare_kmers_DB(Channel.fromPath(params.genome_fasta), 
                          Channel.fromPath(params.genome_fai), 
                          Channel.fromPath(params.kiv2_bed), 
                          Channel.fromPath(params.norm_bed))
+
+        kiv2_kmers = prepare_kmers_DB.out.kiv2_list
+        norm_kmers = prepare_kmers_DB.out.norm_list
     }
 
     // Check for input and counts the KIV2 repeats:
     if(params.count_kiv2) {
+        if(params.samplesheet == "")    error("\nERROR: A samplesheet must be provided to count the KIV2 (see config: 'samplesheet')")
+        if(params.rsids_list  == "")    prinln("rsids file not provided, KILDA will not check for variants in the kmers.")
 
-        if(params.samplesheet == "")     error("ERROR: A samplesheet must be provided to count the KIV2 (see config: 'samplesheet')")
-        if(params.rsids_list  == "")     prinln("rsids file not provided, KILDA will not check for variants in the kmers.")
-
-        if(params.build_DB) { 
-            kiv2_kmers = prepare_kmers_DB.out[0]
-            norm_kmers = prepare_kmers_DB.out[1]
-        } else {
-            kiv2_kmers = params.kiv2_kmers
-            norm_kmers = params.norm_kmers
+        if(params.build_DB == false) {
+            if(params.norm_kmers == "" || params.kiv2_kmers == "") { 
+                error("\nERROR: The path to the lists of kiv2 and normalisation kmers must be provided to count the KIV2 (see config: 'norm_kmers' and 'kiv2_kmers')")
+            } else {
+                norm_kmers = Channel.fromPath(params.norm_kmers)
+                kiv2_kmers = Channel.fromPath(params.kiv2_kmers)
+            }
         }
-        if(kiv2_kmers  == "")     error("ERROR: The directory to the list of KIV2 kmers must be provided to count the KIV2 (see config: 'kiv2_kmers')")
-        if(norm_kmers  == "")     error("ERROR: The directory to the list of Normalisation kmers must be provided to count the KIV2 (see config: 'norm_kmers')")
 
-        kiv2_counts(Channel.fromPath(kiv2_kmers),
-                    Channel.fromPath(norm_kmers),
+        kiv2_counts(kiv2_kmers,
+                    norm_kmers,
                     Channel.fromPath(params.rsids_list),
                     Channel.fromPath(params.samplesheet))
     }

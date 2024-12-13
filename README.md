@@ -26,6 +26,7 @@ This repository contains:
     - [The config file](#the-config-file)
     - [Input formats](#input-formats)
     - [Standalone use kilda.py](#standalone-use-kildapy)
+8. [FAQ](#faq)
 
 ## Rationale
 
@@ -208,6 +209,8 @@ params {
 }
 ```
 
+/!\ If *kmer_DB* is true, the "kiv2_kmers" and "norm_kmers" should be empty (since KILDA will directly use the output from the "kmer_DB" step as lists of kmers!). In case of conflict, an error will be printed on the terminal.
+
 The pipeline will use *jellyfish* to count the kmers and then launch *kilda.py* to count the KIV2 repeats.
 
 The output will be available in the directory set in *wdir*, notably the estimated KIV2 copy numbers are stored in *kilda_kiv2.CNs/kilda_kiv2.CNs*
@@ -368,3 +371,20 @@ If the verbose option is set (-v), then a report for each sample will be written
         LPA  mean kmer occurrence:'5.20'
         CN = 34.19
 ```
+
+### FAQ
+
+#### kmer size discordance
+
+If you have 0 kmers for some samples (see example below), please check the concordance of the kmer length between the list of kmers and the config file ('kmer_size')
+
+```
+Processing 'C0016B8_1'
+        KIV2 kmers with 0 counts: 0 / 0
+        Normalisation kmers with 0 counts: 0 / 0
+        Unknown kmers: 91036
+```
+
+#### GRCh37 vs GRCh38
+
+For the list of kmers provided here, building them on GRCh37 or GRCh37 did not yield significant differences. When using custom kmer lists, there should be an impact on the KIV2 count only if the normalisation and/or KIV2 regions are different between the two versions.
