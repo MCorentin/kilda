@@ -146,7 +146,13 @@ workflow {
     // Check for input and counts the KIV2 repeats:
     if(params.count_kiv2) {
         if(params.samplesheet == "")    error("\nERROR: A samplesheet must be provided to count the KIV2 (see config: 'samplesheet')")
-        if(params.rsids_list  == "")    prinln("rsids file not provided, KILDA will not check for variants in the kmers.")
+
+        if(params.rsids_list  == "") {
+            rsids_list = []
+            println("rsids file not provided, KILDA will not check for variants in the kmers.")
+        } else {
+            rsids_list = Channel.fromPath(params.rsids_list)
+        }
 
         if(params.build_DB == false) {
             if(params.norm_kmers == "" || params.kiv2_kmers == "") { 
@@ -159,7 +165,7 @@ workflow {
 
         kiv2_counts(kiv2_kmers,
                     norm_kmers,
-                    Channel.fromPath(params.rsids_list),
+                    rsids_list,
                     Channel.fromPath(params.samplesheet))
     }
 }
