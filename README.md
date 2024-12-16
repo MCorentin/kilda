@@ -71,7 +71,8 @@ singularity pull library://mcorentin/kilda/kiv2_20240530:0.2
 Alternatively, you can build the image using the recipe provided in this repository [kiv2_20240530.def](./kiv2_20240530.def):
 
 ```shell
-sudo singularity build kiv2_20240530_0.2.sif kiv2_20240530.def
+apptainer build kiv2_20240530_0.2.sif kiv2_20240530.def # with apptainer
+singularity build kiv2_20240530_0.2.sif kiv2_20240530.def  # with singularity
 ```
 
 ## Test Dataset
