@@ -12,6 +12,10 @@ jobs:
 
     runs-on: debian-latest
 
+    container:
+        image: quay.io/singularity/singularity:v4.1.0
+        options: --privileged
+
     steps:
     - uses: actions/checkout@v4
     - name: Build the Apptainer image
