@@ -100,6 +100,16 @@ NA21141 42.58   3       0       6       0       10      0       9
 HG02601 27.94   9       0       5       1       6       0       4
 ```
 
+*ID*: the sample identifier
+
+*KIV_CN*: the KIV2 copy number detected with KILDA
+
+*rsxxx_ref*: the occurrence of kmers representing rsxxx reference allele
+
+*rsxxx_alt*: the occurrence of kmers representing rsxxx alternative allele
+
+*quantile*: which decile the sample belongs to within this group
+
 ## Quick start
 
 The pipeline is centralised around [kilda.nf](./kilda.nf).
@@ -140,16 +150,6 @@ HG00233 26.81   27      		22     			1
 HG00123 28.53   31      		0      			2
 ```
 
-*ID*: the sample identifier
-
-*KIV_CN*: the KIV2 copy number detected with KILDA
-
-*rs41272114_ref*: the occurrence of kmers representing rs41272114 reference allele
-
-*rs41272114_alt*: the occurrence of kmers representing rs41272114 alternative allele
-
-*quantile*: which decile the sample belongs to within this group
-
 ## Running the pipeline
 
 ### The config file
@@ -184,11 +184,11 @@ params {
 
 The pipeline will then (i) extract the kmers from the regions defined in the beds, (ii) keep the one with the correct occurrences (1 for normalisation and 6 for KIV2), (iii) remove kmers that are occuring elsewhere on the genome, and (iv) remove common kmers between the normalisation region(s) and the KIV2 region.
 
-This will produce two *.tsv* and two *.fasta* files, named as following:
+This will produce two *.tsv* files, named as following:
 
- - For KIV2: <input_bed_name>_kmers_6copies_specific.{tsv, fasta}
+ - For KIV2: <input_bed_name>_kmers_6copies_specific.tsv
     
- - For the normalisation: <input_bed_name>_kmers_1copies_specific.{tsv, fasta}
+ - For the normalisation: <input_bed_name>_kmers_1copies_specific.tsv
 
 The *.tsv* files are the one needed for the KIV2 count step.
 
