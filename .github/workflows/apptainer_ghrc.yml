@@ -12,13 +12,13 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    container:
-        image: quay.io/singularity/singularity:v4.1.0
-        options: --privileged
-
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Apptainer image
+
+    - name: Setup apptainer
+      uses: eWaterCycle/setup-apptainer@v2.0.0
+
+    - name: Build KILDA image with apptainer
       run: |
-        singularity build kiv2_20240530_0.2.sif kiv2_20240530.def
-        singularity push kiv2_20240530_0.2.sif oras://ghcr.io/${GITHUB_REPOSITORY}/kiv2_20240530_0.2.sif:latest
+        apptainer build kiv2_20240530_0.2.sif kiv2_20240530.def
+        apptainer push kiv2_20240530_0.2.sif oras://ghcr.io/${GITHUB_REPOSITORY}/kiv2_20240530_0.2.sif:latest
