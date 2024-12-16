@@ -21,4 +21,4 @@ jobs:
     - name: Build the Apptainer image
       run: |
         singularity build kiv2_20240530_0.2.sif kiv2_20240530.def
-        singularity push kiv2_20240530_0.2.sif oras://ghcr.io/MCorentin/kilda:latest
+        singularity push kiv2_20240530_0.2.sif oras://ghcr.io/${GITHUB_REPOSITORY}/kiv2_20240530_0.2.sif:latest
