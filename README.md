@@ -389,3 +389,4 @@ Processing 'C0016B8_1'
 #### GRCh37 vs GRCh38
 
 For the list of kmers provided here, building them on GRCh37 or GRCh37 did not yield significant differences. When using custom kmer lists, there should be an impact on the KIV2 count only if the normalisation and/or KIV2 regions are different between the two versions.
+
