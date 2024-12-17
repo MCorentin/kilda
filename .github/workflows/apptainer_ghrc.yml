@@ -26,4 +26,4 @@ jobs:
       run: |
         apptainer build kiv2_20240530_0.2.sif kiv2_20240530.def
         echo ${{ secrets.GITHUB_TOKEN }} | apptainer remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
-        apptainer push kiv2_20240530_0.2.sif oras://ghcr.io/${GITHUB_REPOSITORY}/kiv2_20240530_0.2:latest
+        apptainer push kiv2_20240530_0.2.sif oras://ghcr.io/${GITHUB_REPOSITORY}/kiv2_20240530:0.2
