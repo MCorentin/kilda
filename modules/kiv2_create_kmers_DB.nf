@@ -114,8 +114,8 @@ process RemoveCommonKmers {
         path(norm_kmers_list)
 
     output:
-        path(kiv2_unique_kmers_list), emit: kiv2_unique_list
-        path(norm_unique_kmers_list), emit: norm_unique_list
+        path(kiv2_unique_kmers_list), emit: kiv2_list
+        path(norm_unique_kmers_list), emit: norm_list
         
     script:
         kiv2_unique_kmers_list = "${kiv2_kmers_list.baseName}.tsv"
