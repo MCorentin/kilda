@@ -62,13 +62,7 @@ The rest of the dependencies, available in our Singularity image, are listed bel
 
 - **The following python packages:** pandas, numpy, matplotlib (note: the following packages should be available by default: getopt, sys, os, warnings)
 
-The Singularity image can be pulled from [Sylabs](https://cloud.sylabs.io/library/mcorentin/kilda/kiv2_20240530):
-
-```shell
-singularity pull library://mcorentin/kilda/kiv2_20240530:0.2
-```
-
-Alternatively, you can build the image using the recipe provided in this repository [kiv2_20240530.def](./kiv2_20240530.def):
+You can build the image using the recipe provided in this repository [kiv2_20240530.def](./kiv2_20240530.def) with Apptainer or Singularity:
 
 ```shell
 apptainer build kiv2_20240530_0.2.sif kiv2_20240530.def # with apptainer
@@ -79,10 +73,10 @@ singularity build kiv2_20240530_0.2.sif kiv2_20240530.def  # with singularity
 
 A test dataset is available under [./test_dataset/](./test_dataset), it can be launched with the following commands:
 
-```
+```shell
 cd /path/to/kilda/
 
-singularity pull library://mcorentin/kilda/kiv2_20240530:0.2
+apptainer build kiv2_20240530_0.2.sif kiv2_20240530.def
 
 cd ./test_dataset/
 
